@@ -9,6 +9,7 @@ export interface User {
   role: 'owner' | 'employee';
   active: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ─── Products ────────────────────────────────────────────────────────────────
