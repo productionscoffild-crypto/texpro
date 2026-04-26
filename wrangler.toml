@@ -1,0 +1,7 @@
+name = "textile-app"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "TEXTILE_KV"
+id = "fbcd2e479f9b4825ab686ed65f51028f"
