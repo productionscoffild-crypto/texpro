@@ -14,13 +14,14 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const userId = user?.id;
 
   useEffect(() => {
     if (!user) return;
     setName(user.name ?? '');
     setPhone(user.phone ?? '');
     setPosition(user.position ?? '');
-  }, [user]);
+  }, [userId]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();

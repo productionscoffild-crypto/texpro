@@ -11,7 +11,7 @@ const OWNER_PASSWORD = 'owner12345';
 const ACCESS_USERS_KEY = 'textile-access-users';
 
 const defaultOwner = (): User => {
-  const now = new Date().toISOString();
+  const now = '2024-01-01T00:00:00.000Z';
 
   return {
     id: 'owner-root',
