@@ -2,9 +2,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useAppStore } from '../store';
 import { useToast } from './ui/Toast';
 import { IconUser } from './ui/Icon';
+import { t } from '../i18n';
 
 export default function ProfilePage() {
-  const { currentUser, updateProfile, changePassword } = useAppStore();
+  const { currentUser, updateProfile, changePassword, language } = useAppStore();
   const { toast } = useToast();
   const user = currentUser();
   const [name, setName] = useState('');
@@ -24,28 +25,28 @@ export default function ProfilePage() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
-      toast('Введите имя и фамилию', 'error');
+      toast(t(language, 'fullName'), 'error');
       return;
     }
     updateProfile({ name: name.trim(), phone: phone.trim(), position: position.trim() });
-    toast('Профиль обновлён', 'success');
+    toast(t(language, 'profileUpdated'), 'success');
   };
 
   const submitPassword = (event: FormEvent) => {
     event.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast('Новый пароль и подтверждение не совпадают', 'error');
+      toast(t(language, 'passwordsMismatch'), 'error');
       return;
     }
     const result = changePassword(currentPassword, newPassword);
     if (!result.ok) {
-      toast(result.error || 'Не удалось сменить пароль', 'error');
+      toast(result.error || t(language, 'wrongCurrentPassword'), 'error');
       return;
     }
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    toast('Пароль изменён', 'success');
+    toast(t(language, 'passwordChanged'), 'success');
   };
 
   if (!user) return null;
@@ -53,8 +54,8 @@ export default function ProfilePage() {
   return (
     <div className="space-y-5 max-w-3xl mx-auto anim-fade-up">
       <div>
-        <h1 className="text-[22px] font-bold text-gray-900">Профиль</h1>
-        <p className="text-[14px] text-gray-500 mt-0.5">Ваши данные и контактная информация</p>
+        <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'profile')}</h1>
+        <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'profileSubtitle')}</p>
       </div>
 
       <div className="card overflow-hidden">
@@ -66,14 +67,14 @@ export default function ProfilePage() {
             <p className="text-[17px] font-bold text-gray-900 truncate">{user.name}</p>
             <p className="text-[13px] text-gray-500 truncate">{user.email}</p>
             <span className="mt-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600">
-              {user.role === 'owner' ? 'Руководитель' : 'Сотрудник'}
+              {user.role === 'owner' ? t(language, 'management') : t(language, 'employees')}
             </span>
           </div>
         </div>
 
         <form onSubmit={submit} className="p-5 space-y-4">
           <div>
-            <label className="label">Имя и фамилия</label>
+            <label className="label">{t(language, 'fullName')}</label>
             <input
               className="input"
               value={name}
@@ -84,7 +85,7 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label">Телефон</label>
+              <label className="label">{t(language, 'phone')}</label>
               <input
                 className="input"
                 value={phone}
@@ -93,7 +94,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="label">Должность</label>
+              <label className="label">{t(language, 'position')}</label>
               <input
                 className="input"
                 value={position}
@@ -104,26 +105,26 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t(language, 'email')}</label>
             <input className="input bg-slate-50 text-gray-500" value={user.email} disabled />
-            <p className="text-[12px] text-gray-400 mt-1">Email используется для входа и сейчас не редактируется.</p>
+            <p className="text-[12px] text-gray-400 mt-1">{t(language, 'emailLoginInfo')}</p>
           </div>
 
           <div className="flex justify-end pt-2">
-            <button className="btn btn-primary" type="submit">Сохранить</button>
+            <button className="btn btn-primary" type="submit">{t(language, 'save')}</button>
           </div>
         </form>
       </div>
 
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-[16px] font-bold text-gray-900">Смена пароля</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">После смены используйте новый пароль при следующем входе.</p>
+          <h2 className="text-[16px] font-bold text-gray-900">{t(language, 'passwordChange')}</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">{t(language, 'passwordChangeHint')}</p>
         </div>
 
         <form onSubmit={submitPassword} className="p-5 space-y-4">
           <div>
-            <label className="label">Текущий пароль</label>
+            <label className="label">{t(language, 'currentPassword')}</label>
             <input
               className="input"
               type="password"
@@ -136,7 +137,7 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label">Новый пароль</label>
+              <label className="label">{t(language, 'newPassword')}</label>
               <input
                 className="input"
                 type="password"
@@ -147,7 +148,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="label">Повторите новый пароль</label>
+              <label className="label">{t(language, 'repeatPassword')}</label>
               <input
                 className="input"
                 type="password"
@@ -165,7 +166,7 @@ export default function ProfilePage() {
               type="submit"
               disabled={!currentPassword || !newPassword || !confirmPassword}
             >
-              Изменить пароль
+              {t(language, 'changePassword')}
             </button>
           </div>
         </form>

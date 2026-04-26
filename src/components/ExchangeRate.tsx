@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAppStore } from '../store';
+import { t } from '../i18n';
 
 const T_BANK_RATES_URL = 'https://www.tinkoff.ru/api/v1/currency_rates/';
 const CACHE_KEY = 'textile-commercial-usd-rate';
@@ -55,6 +57,7 @@ const loadCommercialUsd = async () => {
 };
 
 export default function ExchangeRate() {
+  const { language } = useAppStore();
   const [state, setState] = useState<RateState>(() => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
@@ -104,7 +107,7 @@ export default function ExchangeRate() {
       className="mb-3 w-full rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-3 text-left transition-colors hover:bg-emerald-100"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold text-emerald-600">Купить USD</span>
+        <span className="text-[11px] font-semibold text-emerald-600">{t(language, 'buyUsd')}</span>
         <span className={`h-2 w-2 rounded-full ${state.loading ? 'bg-amber-400' : state.error ? 'bg-red-400' : 'bg-emerald-500'}`} />
       </div>
       <div className="mt-1 text-[18px] font-bold text-emerald-700">
@@ -112,12 +115,12 @@ export default function ExchangeRate() {
       </div>
       <div className="mt-0.5 text-[11px] text-emerald-600/75">
         {state.loading
-          ? 'обновление коммерческого курса...'
+          ? t(language, 'commercialRateLoading')
           : state.error
-            ? state.value ? 'показан последний коммерческий курс' : 'курс покупки недоступен'
+            ? state.value ? t(language, 'commercialRateCached') : t(language, 'commercialRateUnavailable')
             : updatedText
-              ? `Т-Банк · обновлено ${updatedText}`
-              : 'коммерческий курс банка'}
+              ? `Т-Банк · ${t(language, 'updated')} ${updatedText}`
+              : t(language, 'commercialBankRate')}
       </div>
     </div>
   );

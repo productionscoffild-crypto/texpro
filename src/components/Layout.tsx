@@ -5,15 +5,16 @@ import {
   IconDashboard, IconChart, IconPackage, IconInvoice, IconChat, IconBell, IconLogout, IconMenu, IconClose, IconDollar, IconUser,
 } from './ui/Icon';
 import ExchangeRate from './ExchangeRate';
+import { t } from '../i18n';
 
-const NAV: { page: Page; label: string; Icon: React.FC<{ size?: number }> }[] = [
-  { page: 'dashboard', label: 'Главная',  Icon: IconDashboard },
-  { page: 'profile', label: 'Профиль', Icon: IconUser },
-  { page: 'analytics', label: 'Аналитика', Icon: IconChart },
-  { page: 'products',  label: 'Товары',   Icon: IconPackage   },
-  { page: 'invoices',  label: 'Накладные', Icon: IconInvoice  },
-  { page: 'chat', label: 'Чат', Icon: IconChat },
-  { page: 'employees', label: 'Сотрудники', Icon: IconUser },
+const NAV: { page: Page; labelKey: Parameters<typeof t>[1]; Icon: React.FC<{ size?: number }> }[] = [
+  { page: 'dashboard', labelKey: 'dashboard',  Icon: IconDashboard },
+  { page: 'profile', labelKey: 'profile', Icon: IconUser },
+  { page: 'analytics', labelKey: 'analytics', Icon: IconChart },
+  { page: 'products',  labelKey: 'products',   Icon: IconPackage   },
+  { page: 'invoices',  labelKey: 'invoices', Icon: IconInvoice  },
+  { page: 'chat', labelKey: 'chat', Icon: IconChat },
+  { page: 'employees', labelKey: 'employees', Icon: IconUser },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -29,6 +30,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     notificationReadAtByUser,
     markChatNotificationsRead,
     syncFromCloud,
+    language,
+    setLanguage,
   } = useAppStore();
   const user = currentUser();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -81,7 +84,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         }`}
       >
         <item.Icon size={18} />
-        {item.label}
+        {t(language, item.labelKey)}
       </button>
     );
   };
@@ -99,7 +102,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <div>
             <p className="text-[15px] font-bold text-gray-900 leading-none">ТекстильПро</p>
-            <p className="text-[11px] text-gray-400 mt-0.5 leading-none">Оптовые продажи</p>
+            <p className="text-[11px] text-gray-400 mt-0.5 leading-none">{t(language, 'wholesale')}</p>
           </div>
         </div>
       </div>
@@ -111,6 +114,10 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* User + logout */}
       <div className="px-3 pb-4 border-t border-slate-100 pt-3">
+        <div className="mb-3 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
+          <button onClick={() => setLanguage('ru')} className={`rounded-xl px-2 py-2 text-[12px] font-semibold ${language === 'ru' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>RU</button>
+          <button onClick={() => setLanguage('tr')} className={`rounded-xl px-2 py-2 text-[12px] font-semibold ${language === 'tr' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>TR</button>
+        </div>
         <ExchangeRate />
         <div className="relative mb-3">
           <button
@@ -123,8 +130,8 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {unreadCount > 0 && <span className="absolute -right-1 -top-1 h-4 min-w-4 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-4 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-semibold">Уведомления</span>
-                <span className="block truncate text-[11px] opacity-60">{unreadCount > 0 ? `${unreadCount} новых из чата` : 'Новых нет'}</span>
+                <span className="block text-[13px] font-semibold">{t(language, 'notifications')}</span>
+                <span className="block truncate text-[11px] opacity-60">{unreadCount > 0 ? `${unreadCount} ${t(language, 'newFromChat')}` : t(language, 'noNew')}</span>
               </span>
             </span>
           </button>
@@ -132,18 +139,18 @@ export default function Layout({ children }: { children: ReactNode }) {
           {notificationsOpen && (
             <div className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
               <div className="border-b border-slate-100 px-4 py-3">
-                <p className="text-[13px] font-bold text-gray-900">Уведомления чата</p>
+                <p className="text-[13px] font-bold text-gray-900">{t(language, 'chatNotifications')}</p>
               </div>
               {incomingChatMessages.length === 0 ? (
-                <div className="px-4 py-5 text-center text-[13px] text-gray-400">Пока нет уведомлений</div>
+                <div className="px-4 py-5 text-center text-[13px] text-gray-400">{t(language, 'noNotifications')}</div>
               ) : (
                 <div className="max-h-[260px] overflow-auto">
                   {incomingChatMessages.slice(0, 6).map(message => {
                     const author = userById(message.fromUserId);
                     const preview = message.kind === 'voice'
-                      ? 'Голосовое сообщение'
+                      ? t(language, 'voiceMessage')
                       : message.kind === 'file'
-                        ? `Файл: ${message.fileName || 'вложение'}`
+                        ? `${t(language, 'file')}: ${message.fileName || t(language, 'attachment')}`
                         : message.text;
                     return (
                       <button key={message.id} onClick={openChatFromNotification} className="w-full border-b border-slate-50 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0">
@@ -169,12 +176,12 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-gray-900 truncate">{user?.name}</p>
-            <p className="text-[11px] text-gray-400 truncate">Открыть профиль</p>
+            <p className="text-[11px] text-gray-400 truncate">{t(language, 'openProfile')}</p>
           </div>
         </button>
         <button onClick={logout} className="btn btn-ghost w-full justify-start gap-2 text-red-500 hover:bg-red-50 hover:text-red-600">
           <IconLogout size={16} />
-          Выйти
+          {t(language, 'logout')}
         </button>
       </div>
     </div>

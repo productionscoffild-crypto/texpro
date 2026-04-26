@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteRule ^health$ health.php [L]
+RewriteRule ^state$ state.php [L]
+RewriteRule ^login$ login.php [L]

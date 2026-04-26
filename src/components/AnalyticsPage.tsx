@@ -2,6 +2,7 @@ import { useAppStore } from '../store';
 import { IconChart, IconDollar, IconInvoice, IconPackage, IconCheck, IconTrend, IconFileText } from './ui/Icon';
 import { exportAnalyticsExcel } from '../utils/excel';
 import { useState } from 'react';
+import { t } from '../i18n';
 
 const fmt = (n: number, d = 2) =>
   new Intl.NumberFormat('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
@@ -20,7 +21,7 @@ function Card({ label, value, sub, children }: { label: string; value: string; s
 }
 
 export default function AnalyticsPage() {
-  const { myInvoices, myProducts, users } = useAppStore();
+  const { myInvoices, myProducts, users, language } = useAppStore();
   const invoices = myInvoices();
   const products = myProducts();
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -71,27 +72,27 @@ export default function AnalyticsPage() {
   ).sort((a, b) => b.rub - a.rub).slice(0, 5);
 
   const cards = [
-    { label: 'Накладные', value: String(invoices.length), sub: 'создано всего', icon: <IconInvoice size={21} /> },
-    { label: 'Продажи USD', value: `$${fmt(totalUsd)}`, sub: 'сумма по накладным', icon: <IconDollar size={21} /> },
-    { label: 'Продажи RUB', value: `${fmt(totalRub)} ₽`, sub: 'по курсам накладных', icon: <IconChart size={21} /> },
-    { label: 'Оплачено', value: `$${fmt(paidUsd)}`, sub: 'статус Оплачено', icon: <IconCheck size={21} /> },
-    { label: 'Килограммы', value: `${fmt(totalKg, 3)} кг`, sub: 'общий вес', icon: <IconPackage size={21} /> },
-    { label: 'Средний курс', value: avgRate ? `${fmt(avgRate)} ₽` : '0 ₽', sub: 'USD/RUB по накладным', icon: <IconDollar size={21} /> },
+    { label: t(language, 'invoiceCount'), value: String(invoices.length), sub: t(language, 'totalCreated'), icon: <IconInvoice size={21} /> },
+    { label: t(language, 'salesUsd'), value: `$${fmt(totalUsd)}`, sub: t(language, 'byInvoices'), icon: <IconDollar size={21} /> },
+    { label: t(language, 'salesRub'), value: `${fmt(totalRub)} ₽`, sub: t(language, 'byRates'), icon: <IconChart size={21} /> },
+    { label: t(language, 'paid'), value: `$${fmt(paidUsd)}`, sub: t(language, 'paid'), icon: <IconCheck size={21} /> },
+    { label: t(language, 'kg'), value: `${fmt(totalKg, 3)} кг`, sub: t(language, 'totalWeight'), icon: <IconPackage size={21} /> },
+    { label: t(language, 'avgRate'), value: avgRate ? `${fmt(avgRate)} ₽` : '0 ₽', sub: t(language, 'avgRateSub'), icon: <IconDollar size={21} /> },
   ];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto anim-fade-up">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[22px] font-bold text-gray-900">Аналитика</h1>
-          <p className="text-[14px] text-gray-500 mt-0.5">Все показатели считаются из реальных накладных</p>
+          <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'analytics')}</h1>
+          <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'analyticsSubtitle')}</p>
         </div>
         <button
           className="btn bg-[#217346] text-white hover:bg-[#1b5f39]"
           onClick={() => exportAnalyticsExcel({ invoices, products, users, productRows, managerRows, monthLabel })}
           disabled={invoices.length === 0}
         >
-          Excel отчёт
+          {t(language, 'excelReport')}
         </button>
       </div>
 
@@ -106,18 +107,18 @@ export default function AnalyticsPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="text-[16px] font-bold text-gray-900">Продажи по менеджерам</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5">Показатели за выбранный месяц</p>
+            <h2 className="text-[16px] font-bold text-gray-900">{t(language, 'managerSales')}</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5">{t(language, 'monthMetrics')}</p>
           </div>
           <input className="input max-w-[180px]" type="month" value={month} onChange={e => setMonth(e.target.value)} />
         </div>
         {managerRows.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">Нет продаж менеджеров за выбранный месяц</div>
+          <div className="py-12 text-center text-gray-400">{t(language, 'noManagerSales')}</div>
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[760px]">
               <div className="grid bg-slate-50 border-b border-slate-100 px-4 py-3 text-[12px] font-semibold text-gray-500" style={{ gridTemplateColumns: '240px 120px 140px 130px 150px' }}>
-                <div>Менеджер</div><div>Накладные</div><div>Кг</div><div>USD</div><div>RUB</div>
+                <div>{t(language, 'manager')}</div><div>{t(language, 'invoices')}</div><div>{t(language, 'kg')}</div><div>USD</div><div>RUB</div>
               </div>
               {managerRows.map(row => (
                 <div key={row.name} className="grid items-center px-4 py-3 border-b border-slate-100 last:border-b-0 text-[14px]" style={{ gridTemplateColumns: '240px 120px 140px 130px 150px' }}>
@@ -137,10 +138,10 @@ export default function AnalyticsPage() {
         <div className="card overflow-hidden min-h-[158px]">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
             <span className="text-emerald-600"><IconTrend size={18} /></span>
-            <h2 className="text-[16px] font-bold text-gray-900">Топ товаров</h2>
+            <h2 className="text-[16px] font-bold text-gray-900">{t(language, 'topProducts')}</h2>
           </div>
           {productRows.length === 0 ? (
-            <div className="py-12 text-center text-gray-400">Нет данных о продажах</div>
+            <div className="py-12 text-center text-gray-400">{t(language, 'noSalesData')}</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {productRows.slice(0, 5).map((row, index) => (
@@ -157,10 +158,10 @@ export default function AnalyticsPage() {
         <div className="card overflow-hidden min-h-[158px]">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
             <span className="text-blue-600"><IconFileText size={18} /></span>
-            <h2 className="text-[16px] font-bold text-gray-900">Топ клиентов</h2>
+            <h2 className="text-[16px] font-bold text-gray-900">{t(language, 'topClients')}</h2>
           </div>
           {clientRows.length === 0 ? (
-            <div className="py-12 text-center text-gray-400">Нет данных о клиентах</div>
+            <div className="py-12 text-center text-gray-400">{t(language, 'noClientData')}</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {clientRows.map((row, index) => (

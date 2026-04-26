@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../store';
 import { IconChat, IconMic, IconPaperclip, IconSend, IconStop, IconUser } from './ui/Icon';
 import { useToast } from './ui/Toast';
+import { t } from '../i18n';
 
 type Channel =
   | { id: 'general'; scope: 'general'; title: string; subtitle: string; toUserId?: undefined }
@@ -11,7 +12,7 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
 export default function ChatPage() {
-  const { users, currentUser, chatMessages, sendChatMessage, sendVoiceMessage, sendFileMessage, editChatMessage } = useAppStore();
+  const { users, currentUser, chatMessages, sendChatMessage, sendVoiceMessage, sendFileMessage, editChatMessage, language } = useAppStore();
   const { toast } = useToast();
   const me = currentUser();
   const owner = users.find(u => u.role === 'owner');
@@ -31,7 +32,7 @@ export default function ChatPage() {
 
   const channels: Channel[] = useMemo(() => {
     const base: Channel[] = [
-      { id: 'general', scope: 'general', title: 'Общий чат', subtitle: 'Руководство и менеджеры' },
+      { id: 'general', scope: 'general', title: t(language, 'generalChat'), subtitle: t(language, 'managementAndManagers') },
     ];
 
     if (!me) return base;
@@ -55,7 +56,7 @@ export default function ChatPage() {
         {
           id: `direct-${owner.id}`,
           scope: 'direct',
-          title: 'Руководство',
+          title: t(language, 'management'),
           subtitle: owner.email,
           toUserId: owner.id,
         },
@@ -63,7 +64,7 @@ export default function ChatPage() {
     }
 
     return base;
-  }, [employees, me, owner]);
+  }, [employees, me, owner, language]);
 
   const activeChannel = channels.find(ch => ch.id === activeChannelId) ?? channels[0];
   const userById = (id: string) => users.find(u => u.id === id);
@@ -105,7 +106,7 @@ export default function ChatPage() {
     if (!editingId || !editingText.trim()) return;
     editChatMessage(editingId, editingText);
     cancelEdit();
-    toast('Сообщение отредактировано', 'success');
+    toast(t(language, 'edited'), 'success');
   };
 
   const stopTimer = () => {
@@ -123,7 +124,7 @@ export default function ChatPage() {
 
   const startRecording = async () => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      toast('Браузер не поддерживает запись голосовых сообщений', 'error');
+      toast(t(language, 'browserNoVoice'), 'error');
       return;
     }
 
@@ -153,7 +154,7 @@ export default function ChatPage() {
             audioDataUrl: String(reader.result),
             durationSec: duration,
           });
-          toast('Голосовое сообщение отправлено', 'success');
+          toast(t(language, 'voiceSent'), 'success');
         };
 
         reader.readAsDataURL(blob);
@@ -164,7 +165,7 @@ export default function ChatPage() {
       setIsRecording(true);
       timerRef.current = window.setInterval(() => setRecordingSec(sec => sec + 1), 1000);
     } catch {
-      toast('Нет доступа к микрофону', 'error');
+      toast(t(language, 'micNoAccess'), 'error');
       cleanupRecording();
     }
   };
@@ -187,7 +188,7 @@ export default function ChatPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast('Файл слишком большой. Максимум 5 МБ', 'error');
+      toast(t(language, 'fileTooBig'), 'error');
       return;
     }
 
@@ -201,23 +202,23 @@ export default function ChatPage() {
         fileSize: file.size,
         fileDataUrl: String(reader.result),
       });
-      toast('Файл отправлен', 'success');
+      toast(t(language, 'fileSent'), 'success');
     };
-    reader.onerror = () => toast('Не удалось прикрепить файл', 'error');
+    reader.onerror = () => toast(t(language, 'fileAttachError'), 'error');
     reader.readAsDataURL(file);
   };
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto anim-fade-up">
       <div>
-        <h1 className="text-[22px] font-bold text-gray-900">Чат</h1>
-        <p className="text-[14px] text-gray-500 mt-0.5">Внутренняя связь руководства и менеджеров</p>
+        <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'chat')}</h1>
+        <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'chatSubtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 min-h-[620px]">
         <aside className="card overflow-hidden h-fit lg:h-full">
           <div className="px-5 py-4 border-b border-slate-100">
-            <p className="text-[15px] font-bold text-gray-900">Диалоги</p>
+            <p className="text-[15px] font-bold text-gray-900">{t(language, 'dialogs')}</p>
           </div>
           <div className="p-3 space-y-2 max-h-[260px] lg:max-h-none overflow-auto">
             {channels.map(channel => {
@@ -253,8 +254,8 @@ export default function ChatPage() {
             {visibleMessages.length === 0 ? (
               <div className="h-full min-h-[360px] flex flex-col items-center justify-center text-gray-400 text-center">
                 <IconChat size={42} />
-                <p className="mt-3 text-[14px] font-medium">Сообщений пока нет</p>
-                <p className="mt-1 text-[12px]">Напишите первое сообщение в этот диалог</p>
+                <p className="mt-3 text-[14px] font-medium">{t(language, 'noMessages')}</p>
+                <p className="mt-1 text-[12px]">{t(language, 'firstMessage')}</p>
               </div>
             ) : (
               visibleMessages.map(message => {
@@ -307,10 +308,10 @@ export default function ChatPage() {
                         <div>
                           <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words">{message.text}</p>
                           <div className={`mt-1 flex items-center gap-2 text-[11px] ${mine ? 'text-blue-100' : 'text-gray-400'}`}>
-                            {message.editedAt && <span>изменено</span>}
+                            {message.editedAt && <span>{t(language, 'edited')}</span>}
                             {mine && (
                               <button type="button" className="underline underline-offset-2 opacity-80 hover:opacity-100" onClick={() => startEdit(message.id, message.text)}>
-                                редактировать
+                                {t(language, 'edit')}
                               </button>
                             )}
                           </div>
@@ -335,7 +336,7 @@ export default function ChatPage() {
               className="input flex-1"
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder={isRecording ? `Запись... ${recordingSec}с` : 'Введите сообщение...'}
+              placeholder={isRecording ? `${t(language, 'recording')} ${recordingSec}с` : t(language, 'messagePlaceholder')}
               disabled={isRecording}
             />
             <button

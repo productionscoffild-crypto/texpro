@@ -3,6 +3,7 @@ import { useAppStore } from '../store';
 import { InvoiceLine } from '../types';
 import { useToast } from './ui/Toast';
 import { IconPlus, IconTrash, IconArrowBack, IconAlert } from './ui/Icon';
+import { t } from '../i18n';
 
 const uid = () => Math.random().toString(36).slice(2, 11);
 const fmt2 = (n: number) =>
@@ -22,7 +23,7 @@ const emptyLine = (): LineForm => ({
 });
 
 export default function InvoiceNewPage() {
-  const { navigate, myProducts, createInvoice } = useAppStore();
+  const { navigate, myProducts, createInvoice, language } = useAppStore();
   const { toast } = useToast();
   const products = myProducts();
 
@@ -126,8 +127,8 @@ export default function InvoiceNewPage() {
           <IconArrowBack size={18} />
         </button>
         <div>
-          <h1 className="text-[22px] font-bold text-gray-900">Новая накладная</h1>
-          <p className="text-[13px] text-gray-500">Заполните данные и добавьте позиции</p>
+          <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'newInvoice')}</h1>
+          <p className="text-[13px] text-gray-500">{t(language, 'fillInvoice')}</p>
         </div>
       </div>
 
@@ -136,10 +137,10 @@ export default function InvoiceNewPage() {
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
           <IconAlert size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[14px] font-semibold text-amber-800">Нет товаров в прайс-листе</p>
+            <p className="text-[14px] font-semibold text-amber-800">{t(language, 'noProductsInPrice')}</p>
             <p className="text-[13px] text-amber-700 mt-0.5">
-              <button onClick={() => navigate('products')} className="underline font-semibold">Добавьте товары</button>{' '}
-              перед созданием накладной
+              <button onClick={() => navigate('products')} className="underline font-semibold">{t(language, 'addProduct')}</button>{' '}
+              {t(language, 'beforeInvoice')}
             </p>
           </div>
         </div>
@@ -147,10 +148,10 @@ export default function InvoiceNewPage() {
 
       {/* Client info */}
       <div className="card p-5 space-y-4">
-        <h2 className="text-[15px] font-bold text-gray-900">Клиент</h2>
+        <h2 className="text-[15px] font-bold text-gray-900">{t(language, 'client')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Имя / компания *</label>
+            <label className="label">{t(language, 'clientName')} *</label>
             <input
               className={`input ${errors.clientName ? 'error' : ''}`}
               placeholder="ООО Ромашка"
@@ -160,7 +161,7 @@ export default function InvoiceNewPage() {
             {errors.clientName && <p className="text-xs text-red-500 mt-1">{errors.clientName}</p>}
           </div>
           <div>
-            <label className="label">Доп. информация</label>
+            <label className="label">{t(language, 'extraInfo')}</label>
             <input
               className="input"
               placeholder="ИНН, адрес, контакт..."
@@ -172,7 +173,7 @@ export default function InvoiceNewPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
-            <label className="label">Курс USD → RUB *</label>
+            <label className="label">{t(language, 'rate')} USD → RUB *</label>
             <input
               className={`input ${errors.usdRate ? 'error' : ''}`}
               type="number"
@@ -189,7 +190,7 @@ export default function InvoiceNewPage() {
               <div className="text-[13px] text-gray-500 bg-blue-50 rounded-xl px-4 py-2.5">
                 1 USD = <strong className="text-blue-700">{fmtRub(rate)} ₽</strong>
                 <span className="ml-2 text-gray-400">·</span>
-                <span className="ml-2">Итого: <strong className="text-blue-700">${fmt2(totalUsd)}</strong> = <strong className="text-blue-700">{fmtRub(totalRub)} ₽</strong></span>
+                <span className="ml-2">{t(language, 'total')}: <strong className="text-blue-700">${fmt2(totalUsd)}</strong> = <strong className="text-blue-700">{fmtRub(totalRub)} ₽</strong></span>
               </div>
             )}
           </div>
@@ -199,9 +200,9 @@ export default function InvoiceNewPage() {
       {/* Lines */}
       <div className="card p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-[15px] font-bold text-gray-900">Позиции накладной</h2>
+          <h2 className="text-[15px] font-bold text-gray-900">{t(language, 'invoiceLines')}</h2>
           <button className="btn btn-primary btn-sm" onClick={addLine} disabled={products.length === 0}>
-            <IconPlus size={14} /> Добавить
+            <IconPlus size={14} /> {t(language, 'add')}
           </button>
         </div>
 
@@ -211,7 +212,7 @@ export default function InvoiceNewPage() {
             return (
               <div key={line.id} className="bg-slate-50 rounded-2xl p-4 space-y-3 anim-fade-up">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-gray-500">Позиция {idx + 1}</span>
+                  <span className="text-[13px] font-semibold text-gray-500">{t(language, 'positionLine')} {idx + 1}</span>
                   <button
                     className="btn btn-ghost btn-icon text-red-400 hover:bg-red-50 hover:text-red-600"
                     onClick={() => removeLine(line.id)}
@@ -224,13 +225,13 @@ export default function InvoiceNewPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Product */}
                   <div className="sm:col-span-1">
-                    <label className="label">Товар *</label>
+                    <label className="label">{t(language, 'product')} *</label>
                     <select
                       className={`input ${errors[line.id+'_productId'] ? 'error' : ''}`}
                       value={line.productId}
                       onChange={e => updateLine(line.id, 'productId', e.target.value)}
                     >
-                      <option value="">Выберите товар</option>
+                      <option value="">{t(language, 'chooseProduct')}</option>
                       {products.map(p => (
                         <option key={p.id} value={p.id}>
                           {p.name} (${p.priceUsd}/кг)
@@ -241,7 +242,7 @@ export default function InvoiceNewPage() {
 
                   {/* Qty */}
                   <div>
-                    <label className="label">Кол-во (кг) *</label>
+                    <label className="label">{t(language, 'quantity')} (кг) *</label>
                     <input
                       className={`input ${errors[line.id+'_quantityKg'] ? 'error' : ''}`}
                       type="number"
@@ -255,7 +256,7 @@ export default function InvoiceNewPage() {
 
                   {/* Price */}
                   <div>
-                    <label className="label">Цена USD/кг * {rate > 0 && line.priceUsd && parseFloat(line.priceUsd) > 0 ? <span className="text-gray-400 font-normal">({fmtRub(parseFloat(line.priceUsd) * rate)} ₽/кг)</span> : null}</label>
+                    <label className="label">{t(language, 'priceUsd')}/кг * {rate > 0 && line.priceUsd && parseFloat(line.priceUsd) > 0 ? <span className="text-gray-400 font-normal">({fmtRub(parseFloat(line.priceUsd) * rate)} ₽/кг)</span> : null}</label>
                     <input
                       className={`input ${errors[line.id+'_priceUsd'] ? 'error' : ''}`}
                       type="number"
@@ -291,7 +292,7 @@ export default function InvoiceNewPage() {
         {/* Grand total */}
         {totalUsd > 0 && (
           <div className="mt-2 bg-blue-600 text-white rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <span className="text-[14px] font-semibold opacity-80">Общая сумма</span>
+            <span className="text-[14px] font-semibold opacity-80">{t(language, 'totalAmount')}</span>
             <div className="text-right">
               <div className="text-[22px] font-bold text-money">${fmt2(totalUsd)}</div>
               {rate > 0 && <div className="text-[14px] opacity-80 text-money">{fmtRub(totalRub)} ₽ при курсе {fmtRub(rate)} ₽</div>}
@@ -302,13 +303,13 @@ export default function InvoiceNewPage() {
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pb-6">
-        <button className="btn btn-secondary" onClick={() => navigate('invoices')}>Отмена</button>
+        <button className="btn btn-secondary" onClick={() => navigate('invoices')}>{t(language, 'cancel')}</button>
         <button
           className="btn btn-primary"
           onClick={handleSubmit}
           disabled={products.length === 0}
         >
-          Создать накладную
+          {t(language, 'createInvoice')}
         </button>
       </div>
     </div>

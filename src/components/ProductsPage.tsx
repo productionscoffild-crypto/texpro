@@ -5,6 +5,7 @@ import Modal from './ui/Modal';
 import { useToast } from './ui/Toast';
 import { IconPlus, IconEdit, IconTrash, IconPackage } from './ui/Icon';
 import { exportProductsExcel } from '../utils/excel';
+import { t } from '../i18n';
 
 const fmt2 = (n: number) =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -13,7 +14,7 @@ type FormData = { name: string; composition: string; priceUsd: string; density: 
 const empty: FormData = { name: '', composition: '', priceUsd: '', density: '' };
 
 export default function ProductsPage() {
-  const { myProducts, addProduct, updateProduct, deleteProduct } = useAppStore();
+  const { myProducts, addProduct, updateProduct, deleteProduct, language } = useAppStore();
   const { toast } = useToast();
   const products = myProducts();
 
@@ -77,15 +78,15 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[22px] font-bold text-gray-900">Товары</h1>
-          <p className="text-[14px] text-gray-500 mt-0.5">Управление прайс-листом тканей</p>
+          <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'products')}</h1>
+          <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'manageProducts')}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button className="btn bg-[#217346] text-white hover:bg-[#1b5f39]" onClick={() => exportProductsExcel(products)} disabled={products.length === 0}>
             Excel
           </button>
           <button className="btn btn-primary" onClick={openAdd}>
-            <IconPlus size={16} /> Добавить товар
+            <IconPlus size={16} /> {t(language, 'addProduct')}
           </button>
         </div>
       </div>
@@ -95,22 +96,22 @@ export default function ProductsPage() {
         {products.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <IconPackage size={44} />
-            <p className="text-[15px] font-medium">Нет товаров</p>
-            <p className="text-[13px]">Добавьте первый товар для работы с накладными</p>
+            <p className="text-[15px] font-medium">{t(language, 'noProducts')}</p>
+            <p className="text-[13px]">{t(language, 'addFirstProduct')}</p>
             <button className="btn btn-primary btn-sm mt-1" onClick={openAdd}>
-              <IconPlus size={14} /> Добавить
+              <IconPlus size={14} /> {t(language, 'add')}
             </button>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
             <div className="hidden md:grid grid-cols-[1.4fr_1fr_120px_120px_88px] gap-4 px-5 py-3 bg-slate-50 text-[12px] font-semibold text-gray-500">
-              <span>Название</span><span>Состав</span><span className="text-right">Цена</span><span className="text-right">Плотность</span><span className="text-center">Действия</span>
+              <span>{t(language, 'name')}</span><span>{t(language, 'composition')}</span><span className="text-right">{t(language, 'price')}</span><span className="text-right">{t(language, 'density')}</span><span className="text-center">{t(language, 'actions')}</span>
             </div>
             {products.map(p => (
               <div key={p.id} className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_120px_120px_88px] gap-3 md:gap-4 px-5 py-4 items-center">
                 <div>
                   <p className="font-semibold text-gray-900">{p.name}</p>
-                  <p className="md:hidden text-[12px] text-gray-400 mt-1">{p.composition || 'Состав не указан'} · {p.density} г/м²</p>
+                  <p className="md:hidden text-[12px] text-gray-400 mt-1">{p.composition || '—'} · {p.density} г/м²</p>
                 </div>
                 <div className="hidden md:block text-[14px] text-gray-600">{p.composition || '—'}</div>
                 <div className="text-money font-bold text-emerald-700 md:text-right">${fmt2(p.priceUsd)}</div>
@@ -129,19 +130,19 @@ export default function ProductsPage() {
       <Modal
         open={modal === 'add' || modal === 'edit'}
         onClose={closeModal}
-        title={modal === 'add' ? 'Добавить товар' : 'Редактировать товар'}
+        title={modal === 'add' ? t(language, 'addProduct') : t(language, 'editProduct')}
         footer={
           <>
-            <button className="btn btn-secondary" onClick={closeModal}>Отмена</button>
+            <button className="btn btn-secondary" onClick={closeModal}>{t(language, 'cancel')}</button>
             <button className="btn btn-primary" onClick={handleSave}>
-              {modal === 'add' ? 'Добавить' : 'Сохранить'}
+              {modal === 'add' ? t(language, 'add') : t(language, 'save')}
             </button>
           </>
         }
       >
         <div className="space-y-4">
           <div>
-            <label className="label">Название ткани *</label>
+            <label className="label">{t(language, 'fabricName')} *</label>
             <input
               className={`input ${errors.name ? 'error' : ''}`}
               placeholder="Кулирка, футер, рибана..."
@@ -153,7 +154,7 @@ export default function ProductsPage() {
           </div>
 
           <div>
-            <label className="label">Состав</label>
+            <label className="label">{t(language, 'composition')}</label>
             <input
               className="input"
               placeholder="95% хлопок, 5% лайкра"
@@ -164,7 +165,7 @@ export default function ProductsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Цена (USD/кг) *</label>
+              <label className="label">{t(language, 'price')} (USD/кг) *</label>
               <input
                 className={`input ${errors.priceUsd ? 'error' : ''}`}
                 type="number"
@@ -177,7 +178,7 @@ export default function ProductsPage() {
               {errors.priceUsd && <p className="text-xs text-red-500 mt-1">{errors.priceUsd}</p>}
             </div>
             <div>
-              <label className="label">Плотность (г/м²) *</label>
+              <label className="label">{t(language, 'density')} (г/м²) *</label>
               <input
                 className={`input ${errors.density ? 'error' : ''}`}
                 type="number"
@@ -197,16 +198,16 @@ export default function ProductsPage() {
       <Modal
         open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="Удалить товар?"
+        title={t(language, 'deleteProductQ')}
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)}>Отмена</button>
-            <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm!)}>Удалить</button>
+            <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)}>{t(language, 'cancel')}</button>
+            <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm!)}>{t(language, 'delete')}</button>
           </>
         }
       >
         <p className="text-[14px] text-gray-600">
-          Товар будет удалён из прайс-листа. Уже созданные накладные сохранят данные о нём.
+          {t(language, 'deleteProductText')}
         </p>
       </Modal>
     </div>

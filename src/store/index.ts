@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, Product, Invoice, Page, ChatMessage } from '../types';
 import { CloudState, cloudApi } from '../utils/cloudApi';
+import { Lang } from '../i18n';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 11);
@@ -144,6 +145,7 @@ interface AppState {
   activeInvoiceId: string | null;
   sidebarOpen: boolean;
   cloudError: string | null;
+  language: Lang;
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -158,6 +160,7 @@ interface AppState {
   // ── Navigation ────────────────────────────────────────────────────────────
   navigate: (page: Page, invoiceId?: string) => void;
   setSidebarOpen: (v: boolean) => void;
+  setLanguage: (language: Lang) => void;
 
   // ── Products ──────────────────────────────────────────────────────────────
   addProduct: (data: Omit<Product, 'id' | 'userId' | 'createdAt'>) => void;
@@ -197,6 +200,7 @@ export const useAppStore = create<AppState>()(
       activeInvoiceId: null,
       sidebarOpen: false,
       cloudError: null,
+      language: 'ru',
 
       // ── Auth ────────────────────────────────────────────────────────────────
       createEmployee: async (name, email, password) => {
@@ -307,6 +311,7 @@ export const useAppStore = create<AppState>()(
       // ── Navigation ──────────────────────────────────────────────────────────
       navigate: (page, invoiceId) => set({ page, activeInvoiceId: invoiceId ?? null, sidebarOpen: false }),
       setSidebarOpen: (v) => set({ sidebarOpen: v }),
+      setLanguage: (language) => set({ language }),
 
       syncFromCloud: async () => {
         try {
@@ -486,6 +491,7 @@ export const useAppStore = create<AppState>()(
         invoices: s.invoices.map(normalizeInvoice),
         chatMessages: s.chatMessages.map(normalizeChatMessage),
         notificationReadAtByUser: s.notificationReadAtByUser,
+        language: s.language,
       }),
     }
   )

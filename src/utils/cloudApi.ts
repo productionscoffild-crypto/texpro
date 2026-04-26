@@ -9,9 +9,9 @@ export interface CloudState {
 }
 
 const apiBase = () => {
-  const configured = localStorage.getItem('textile-api-url');
-  if (configured) return configured.replace(/\/$/, '');
   if (['5173', '4173'].includes(window.location.port)) {
+    const configured = localStorage.getItem('textile-api-url');
+    if (configured) return configured.replace(/\/$/, '');
     return `${window.location.protocol}//${window.location.hostname}:8787`;
   }
   return window.location.origin;
@@ -33,19 +33,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const cloudApi = {
   baseUrl: apiBase,
 
-  health: () => request<{ ok: true }>('/api/health'),
+  health: () => request<{ ok: true }>('/api/health.php'),
 
   login: (email: string, password: string) =>
-    request<{ user: User; state: CloudState }>('/api/login', {
+    request<{ user: User; state: CloudState }>('/api/login.php', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
 
-  getState: () => request<CloudState>('/api/state'),
+  getState: () => request<CloudState>('/api/state.php'),
 
   saveState: (state: CloudState) =>
-    request<{ ok: true }>('/api/state', {
-      method: 'PUT',
+    request<{ ok: true }>('/api/state.php', {
+      method: 'POST',
       body: JSON.stringify(state),
     }),
 };

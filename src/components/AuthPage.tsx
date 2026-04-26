@@ -2,9 +2,10 @@ import { useState, FormEvent } from 'react';
 import { useAppStore } from '../store';
 import { useToast } from './ui/Toast';
 import { IconUser, IconDollar } from './ui/Icon';
+import { t } from '../i18n';
 
 export default function AuthPage() {
-  const { login } = useAppStore();
+  const { login, language, setLanguage } = useAppStore();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -14,10 +15,10 @@ export default function AuthPage() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!email.trim()) e.email = 'Введите email';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Некорректный email';
-    if (!password) e.password = 'Введите пароль';
-    else if (password.length < 6) e.password = 'Минимум 6 символов';
+    if (!email.trim()) e.email = t(language, 'enterEmail');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t(language, 'invalidEmail');
+    if (!password) e.password = t(language, 'enterPassword');
+    else if (password.length < 6) e.password = t(language, 'min6');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -30,7 +31,7 @@ export default function AuthPage() {
       const r = login(email, password);
       const result = await r;
       if (!result.ok) { toast(result.error!, 'error'); }
-      else toast('Добро пожаловать!', 'success');
+      else toast(t(language, 'welcome'), 'success');
     } finally {
       setLoading(false);
     }
@@ -48,21 +49,26 @@ export default function AuthPage() {
           <IconDollar size={28} className="text-white" />
         </div>
         <h1 className="text-[26px] font-bold text-gray-900 leading-none">ТекстильПро</h1>
-        <p className="text-[14px] text-gray-500 mt-1">Система управления оптовыми продажами</p>
+        <p className="text-[14px] text-gray-500 mt-1">{t(language, 'wholesale')}</p>
       </div>
 
       {/* Card */}
       <div className="card w-full max-w-[400px] p-8 anim-scale-in">
         <h2 className="text-[20px] font-bold text-gray-900 mb-1">
-          Вход в систему
+          {t(language, 'loginTitle')}
         </h2>
         <p className="text-[13px] text-gray-500 mb-6">
-          Доступ только для владельца и сотрудников
+          {t(language, 'loginSubtitle')}
         </p>
+
+        <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
+          <button type="button" onClick={() => setLanguage('ru')} className={`rounded-xl px-2 py-2 text-[12px] font-semibold ${language === 'ru' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>RU</button>
+          <button type="button" onClick={() => setLanguage('tr')} className={`rounded-xl px-2 py-2 text-[12px] font-semibold ${language === 'tr' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>TR</button>
+        </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t(language, 'email')}</label>
             <input
               type="email"
               className={`input ${errors.email ? 'error' : ''}`}
@@ -75,7 +81,7 @@ export default function AuthPage() {
           </div>
 
           <div>
-            <label className="label">Пароль</label>
+            <label className="label">{t(language, 'password')}</label>
             <input
               type="password"
               className={`input ${errors.password ? 'error' : ''}`}
@@ -96,19 +102,19 @@ export default function AuthPage() {
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              'Войти'
+              t(language, 'signIn')
             )}
           </button>
         </form>
 
         <div className="mt-5 rounded-xl bg-slate-50 p-3 text-[12px] text-gray-500 leading-relaxed">
-          Публичная регистрация отключена. Сотрудников добавляет только владелец во вкладке «Сотрудники».
+          {t(language, 'publicRegistrationOff')}
         </div>
       </div>
 
       <p className="text-[12px] text-gray-400 mt-6 flex items-center gap-1.5">
         <IconUser size={12} />
-        Данные хранятся в вашем браузере
+        {t(language, 'dataInBrowser')}
       </p>
     </div>
   );
