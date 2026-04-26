@@ -307,7 +307,9 @@ export const useAppStore = create<AppState>()(
           saveAccessUsers(users);
           return { users };
         });
-        void saveCloud(get());
+        // Profile edits must not be merged back with an older remote owner record.
+        // Save the current normalized state directly so name/phone/position persist immediately.
+        void cloudApi.saveState(toCloudState(get()));
       },
 
       changePassword: (currentPassword, newPassword) => {
@@ -324,7 +326,7 @@ export const useAppStore = create<AppState>()(
           saveAccessUsers(users);
           return { users };
         });
-        void saveCloud(get());
+        void cloudApi.saveState(toCloudState(get()));
         return { ok: true };
       },
 
