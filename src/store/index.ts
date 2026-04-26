@@ -4,8 +4,8 @@ import { User, Product, Invoice, Page, ChatMessage } from '../types';
 import { CloudState, cloudApi } from '../utils/cloudApi';
 import { Lang } from '../i18n';
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 11);
+
 const OWNER_EMAIL = 'owner@textilepro.local';
 const OWNER_PASSWORD = 'owner12345';
 const ACCESS_USERS_KEY = 'textile-access-users';
@@ -47,64 +47,6 @@ const loadAccessUsers = (): User[] => {
   }
 };
 
-const toCloudState = (state: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...state.users]),
-  products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
-  invoices: state.invoices.map(normalizeInvoice),
-  chatMessages: state.chatMessages.map(normalizeChatMessage),
-  notificationReadAtByUser: state.notificationReadAtByUser,
-});
-
-const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string }> => {
-  try {
-    await cloudApi.saveState(toCloudState(state));
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Сервер недоступен' };
-  }
-};
-
-const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
-  products: [...remote.products, ...local.products]
-    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
-    .map(p => ({ ...p, composition: p.composition ?? '' })),
-  invoices: [...remote.invoices, ...local.invoices]
-    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
-    .map(normalizeInvoice),
-  chatMessages: [...remote.chatMessages, ...local.chatMessages]
-    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
-    .map(normalizeChatMessage),
-  notificationReadAtByUser: {
-    ...(remote.notificationReadAtByUser || {}),
-    ...(local.notificationReadAtByUser || {}),
-  },
-});
-
-const applyCloudState = (
-  set: (partial: Partial<AppState>) => void,
-  state: CloudState,
-  currentUserId: string | null = null
-) => {
-  set({
-    users: uniqueUsers([defaultOwner(), ...state.users]),
-    products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
-    invoices: state.invoices.map(normalizeInvoice),
-    chatMessages: state.chatMessages.map(normalizeChatMessage),
-    notificationReadAtByUser: state.notificationReadAtByUser || {},
-    currentUserId,
-    cloudError: null,
-  });
-};
-
-const saveAccessUsers = (users: User[]) => {
-  try {
-    localStorage.setItem(ACCESS_USERS_KEY, JSON.stringify(uniqueUsers(users)));
-  } catch {
-    // localStorage can be unavailable in private mode; Zustand persist remains the main storage.
-  }
-};
-
 const invoiceNumber = (invoices: Invoice[]): string => {
   const d = new Date();
   const y = d.getFullYear();
@@ -128,26 +70,21 @@ const normalizeChatMessage = (message: ChatMessage): ChatMessage => ({
   text: message.text ?? '',
 });
 
-// ─── State shape ─────────────────────────────────────────────────────────────
 interface AppState {
-  // auth
   users: User[];
   currentUserId: string | null;
 
-  // data
   products: Product[];
   invoices: Invoice[];
   chatMessages: ChatMessage[];
   notificationReadAtByUser: Record<string, string>;
 
-  // ui
   page: Page;
   activeInvoiceId: string | null;
   sidebarOpen: boolean;
   cloudError: string | null;
   language: Lang;
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   createEmployee: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -157,36 +94,100 @@ interface AppState {
   changePassword: (currentPassword: string, newPassword: string) => { ok: boolean; error?: string };
   syncFromCloud: () => Promise<void>;
 
-  // ── Navigation ────────────────────────────────────────────────────────────
   navigate: (page: Page, invoiceId?: string) => void;
   setSidebarOpen: (v: boolean) => void;
   setLanguage: (language: Lang) => void;
 
-  // ── Products ──────────────────────────────────────────────────────────────
   addProduct: (data: Omit<Product, 'id' | 'userId' | 'createdAt'>) => void;
   updateProduct: (id: string, data: Partial<Pick<Product, 'name' | 'composition' | 'priceUsd' | 'density'>>) => void;
   deleteProduct: (id: string) => void;
 
-  // ── Invoices ──────────────────────────────────────────────────────────────
   createInvoice: (data: Omit<Invoice, 'id' | 'userId' | 'number' | 'createdAt'>) => string;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => void;
   deleteInvoice: (id: string) => void;
 
-  // ── Chat ──────────────────────────────────────────────────────────────────
   sendChatMessage: (data: Pick<ChatMessage, 'scope' | 'text' | 'toUserId'>) => void;
   sendVoiceMessage: (data: Pick<ChatMessage, 'scope' | 'toUserId' | 'audioDataUrl' | 'durationSec'>) => void;
   sendFileMessage: (data: Pick<ChatMessage, 'scope' | 'toUserId' | 'fileName' | 'fileType' | 'fileSize' | 'fileDataUrl'>) => void;
   editChatMessage: (id: string, text: string) => void;
   markChatNotificationsRead: () => void;
 
-  // ── Selectors ─────────────────────────────────────────────────────────────
   currentUser: () => User | null;
   myProducts: () => Product[];
   myInvoices: () => Invoice[];
   dashboardStats: () => { invoiceCount: number; totalSalesUsd: number; totalSalesRub: number; paidUsd: number };
 }
 
-// ─── Store ───────────────────────────────────────────────────────────────────
+const toCloudState = (state: AppState): CloudState => ({
+  users: uniqueUsers([defaultOwner(), ...state.users]),
+  products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
+  invoices: state.invoices.map(normalizeInvoice),
+  chatMessages: state.chatMessages.map(normalizeChatMessage),
+  notificationReadAtByUser: state.notificationReadAtByUser,
+});
+
+const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
+  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
+  products: [...remote.products, ...local.products]
+    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
+    .map(p => ({ ...p, composition: p.composition ?? '' })),
+  invoices: [...remote.invoices, ...local.invoices]
+    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
+    .map(normalizeInvoice),
+  chatMessages: [...remote.chatMessages, ...local.chatMessages]
+    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
+    .map(normalizeChatMessage),
+  notificationReadAtByUser: {
+    ...(remote.notificationReadAtByUser || {}),
+    ...(local.notificationReadAtByUser || {}),
+  },
+});
+
+const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string }> => {
+  try {
+    let nextState = toCloudState(state);
+
+    try {
+      const remote = await cloudApi.getState();
+      nextState = mergeCloudState(remote, state);
+    } catch {
+      // If remote read fails, still try to save the current state.
+    }
+
+    await cloudApi.saveState(nextState);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Сервер недоступен',
+    };
+  }
+};
+
+const applyCloudState = (
+  set: (partial: Partial<AppState>) => void,
+  state: CloudState,
+  currentUserId: string | null = null
+) => {
+  set({
+    users: uniqueUsers([defaultOwner(), ...state.users]),
+    products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
+    invoices: state.invoices.map(normalizeInvoice),
+    chatMessages: state.chatMessages.map(normalizeChatMessage),
+    notificationReadAtByUser: state.notificationReadAtByUser || {},
+    currentUserId,
+    cloudError: null,
+  });
+};
+
+const saveAccessUsers = (users: User[]) => {
+  try {
+    localStorage.setItem(ACCESS_USERS_KEY, JSON.stringify(uniqueUsers(users)));
+  } catch {
+    // Ignore localStorage problems.
+  }
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -202,15 +203,17 @@ export const useAppStore = create<AppState>()(
       cloudError: null,
       language: 'ru',
 
-      // ── Auth ────────────────────────────────────────────────────────────────
       createEmployee: async (name, email, password) => {
         const current = get().currentUser();
         if (current?.role !== 'owner') return { ok: false, error: 'Недостаточно прав' };
+
         const normalizedEmail = email.trim().toLowerCase();
         const users = uniqueUsers([defaultOwner(), ...get().users, ...loadAccessUsers()]);
+
         if (users.find(u => u.email === normalizedEmail)) {
           return { ok: false, error: 'Пользователь с таким email уже существует' };
         }
+
         const user: User = {
           id: uid(),
           name: name.trim(),
@@ -222,60 +225,83 @@ export const useAppStore = create<AppState>()(
           active: true,
           createdAt: new Date().toISOString(),
         };
+
         const nextUsers = uniqueUsers([...users, user]);
         saveAccessUsers(nextUsers);
         set({ users: nextUsers });
+
         const saved = await saveCloud(get());
-        if (!saved.ok) return { ok: false, error: `Supabase не сохранил сотрудника: ${saved.error}` };
+        if (!saved.ok) {
+          return { ok: false, error: `Supabase не сохранил сотрудника: ${saved.error}` };
+        }
+
         return { ok: true };
       },
 
       toggleEmployee: (id) => {
         const current = get().currentUser();
         if (current?.role !== 'owner') return;
+
         set(s => {
-          const users = uniqueUsers(s.users.map(u => u.id === id && u.role === 'employee' ? { ...u, active: !u.active } : u));
+          const users = uniqueUsers(
+            s.users.map(u => u.id === id && u.role === 'employee' ? { ...u, active: !u.active } : u)
+          );
           saveAccessUsers(users);
           return { users };
         });
+
         void saveCloud(get());
       },
 
       deleteEmployee: (id) => {
         const current = get().currentUser();
         if (current?.role !== 'owner') return;
+
         set(s => {
           const users = uniqueUsers(s.users.filter(u => !(u.id === id && u.role === 'employee')));
           saveAccessUsers(users);
           return { users };
         });
+
         void saveCloud(get());
       },
 
       updateProfile: (data) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
+
         set(s => {
           const users = uniqueUsers(s.users.map(u => u.id === currentUserId ? { ...u, ...data } : u));
           saveAccessUsers(users);
           return { users };
         });
+
         void saveCloud(get());
       },
 
       changePassword: (currentPassword, newPassword) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return { ok: false, error: 'Пользователь не найден' };
+
         const user = get().users.find(u => u.id === currentUserId);
         if (!user) return { ok: false, error: 'Пользователь не найден' };
-        if (user.passwordHash !== currentPassword) return { ok: false, error: 'Текущий пароль указан неверно' };
-        if (newPassword.length < 6) return { ok: false, error: 'Новый пароль должен быть не короче 6 символов' };
+
+        if (user.passwordHash !== currentPassword) {
+          return { ok: false, error: 'Текущий пароль указан неверно' };
+        }
+
+        if (newPassword.length < 6) {
+          return { ok: false, error: 'Новый пароль должен быть не короче 6 символов' };
+        }
 
         set(s => {
-          const users = uniqueUsers(s.users.map(u => u.id === currentUserId ? { ...u, passwordHash: newPassword } : u));
+          const users = uniqueUsers(
+            s.users.map(u => u.id === currentUserId ? { ...u, passwordHash: newPassword } : u)
+          );
           saveAccessUsers(users);
           return { users };
         });
+
         void saveCloud(get());
         return { ok: true };
       },
@@ -284,24 +310,38 @@ export const useAppStore = create<AppState>()(
         try {
           const { user, state } = await cloudApi.login(email, password);
           const merged = mergeCloudState(state, get());
+
           applyCloudState(set, merged, user.id);
           saveAccessUsers(merged.users);
+
           void cloudApi.saveState(merged);
           return { ok: true };
         } catch (error) {
-          let users = uniqueUsers([defaultOwner(), ...get().users, ...loadAccessUsers()]);
+          const users = uniqueUsers([defaultOwner(), ...get().users, ...loadAccessUsers()]);
           set({ users, cloudError: error instanceof Error ? error.message : 'Ошибка облака' });
           saveAccessUsers(users);
+
           const user = users.find(u => u.email === email.trim().toLowerCase());
+
           if (!user) {
             const message = error instanceof Error ? error.message : '';
+
             if (message.includes('Пользователь не найден')) {
-              return { ok: false, error: 'Пользователь не найден на сервере. Владелец должен создать сотрудника при включённом backend.' };
+              return {
+                ok: false,
+                error: 'Пользователь не найден в Supabase. Проверьте, что он есть в state_json.users и Cloudflare уже задеплоил последнюю версию.',
+              };
             }
-            return { ok: false, error: `Backend недоступен (${cloudApi.baseUrl()}). Запустите server/server.js или проверьте API URL.` };
+
+            return {
+              ok: false,
+              error: `Не удалось подключиться к Supabase: ${message || 'неизвестная ошибка'}`,
+            };
           }
+
           if (!user.active) return { ok: false, error: 'Доступ сотрудника отключён' };
           if (user.passwordHash !== password) return { ok: false, error: 'Неверный пароль' };
+
           set({ currentUserId: user.id, page: 'dashboard' });
           return { ok: true };
         }
@@ -309,37 +349,42 @@ export const useAppStore = create<AppState>()(
 
       logout: () => set({ currentUserId: null, page: 'dashboard', sidebarOpen: false }),
 
-      // ── Navigation ──────────────────────────────────────────────────────────
       navigate: (page, invoiceId) => set({ page, activeInvoiceId: invoiceId ?? null, sidebarOpen: false }),
       setSidebarOpen: (v) => set({ sidebarOpen: v }),
       setLanguage: (language) => set({ language }),
 
       syncFromCloud: async () => {
         try {
-          const state = await cloudApi.getState();
-          applyCloudState(set, state, get().currentUserId);
+          const remote = await cloudApi.getState();
+          const merged = mergeCloudState(remote, get());
+
+          applyCloudState(set, merged, get().currentUserId);
+
+          if (JSON.stringify(remote) !== JSON.stringify(merged)) {
+            void cloudApi.saveState(merged);
+          }
         } catch (error) {
           set({ cloudError: error instanceof Error ? error.message : 'Ошибка синхронизации' });
         }
       },
 
-      // ── Products ────────────────────────────────────────────────────────────
       addProduct: (data) => {
-        const uid2 = uid();
         const product: Product = {
-          id: uid2,
+          id: uid(),
           userId: get().currentUserId!,
           ...data,
           createdAt: new Date().toISOString(),
         };
+
         set(s => ({ products: [...s.products, product] }));
         void saveCloud(get());
       },
 
       updateProduct: (id, data) => {
         set(s => ({
-          products: s.products.map(p => (p.id === id ? { ...p, ...data } : p)),
+          products: s.products.map(p => p.id === id ? { ...p, ...data } : p),
         }));
+
         void saveCloud(get());
       },
 
@@ -348,10 +393,10 @@ export const useAppStore = create<AppState>()(
         void saveCloud(get());
       },
 
-      // ── Invoices ────────────────────────────────────────────────────────────
       createInvoice: (data) => {
         const { invoices, currentUserId } = get();
         const id = uid();
+
         const invoice: Invoice = {
           id,
           userId: currentUserId!,
@@ -359,15 +404,18 @@ export const useAppStore = create<AppState>()(
           ...data,
           createdAt: new Date().toISOString(),
         };
+
         set(s => ({ invoices: [...s.invoices, invoice] }));
         void saveCloud(get());
+
         return id;
       },
 
       updateInvoiceStatus: (id, status) => {
         set(s => ({
-          invoices: s.invoices.map(inv => (inv.id === id ? { ...inv, status } : inv)),
+          invoices: s.invoices.map(inv => inv.id === id ? { ...inv, status } : inv),
         }));
+
         void saveCloud(get());
       },
 
@@ -379,6 +427,7 @@ export const useAppStore = create<AppState>()(
       sendChatMessage: ({ scope, text, toUserId }) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId || !text.trim()) return;
+
         const message: ChatMessage = {
           id: uid(),
           scope,
@@ -388,6 +437,7 @@ export const useAppStore = create<AppState>()(
           text: text.trim(),
           createdAt: new Date().toISOString(),
         };
+
         set(s => ({ chatMessages: [...s.chatMessages, message] }));
         void saveCloud(get());
       },
@@ -395,6 +445,7 @@ export const useAppStore = create<AppState>()(
       sendVoiceMessage: ({ scope, toUserId, audioDataUrl, durationSec }) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId || !audioDataUrl) return;
+
         const message: ChatMessage = {
           id: uid(),
           scope,
@@ -406,6 +457,7 @@ export const useAppStore = create<AppState>()(
           durationSec,
           createdAt: new Date().toISOString(),
         };
+
         set(s => ({ chatMessages: [...s.chatMessages, message] }));
         void saveCloud(get());
       },
@@ -413,6 +465,7 @@ export const useAppStore = create<AppState>()(
       sendFileMessage: ({ scope, toUserId, fileName, fileType, fileSize, fileDataUrl }) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId || !fileDataUrl || !fileName) return;
+
         const message: ChatMessage = {
           id: uid(),
           scope,
@@ -426,6 +479,7 @@ export const useAppStore = create<AppState>()(
           fileDataUrl,
           createdAt: new Date().toISOString(),
         };
+
         set(s => ({ chatMessages: [...s.chatMessages, message] }));
         void saveCloud(get());
       },
@@ -433,29 +487,34 @@ export const useAppStore = create<AppState>()(
       editChatMessage: (id, text) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId || !text.trim()) return;
+
         set(s => ({
           chatMessages: s.chatMessages.map(message =>
-            message.id === id && message.fromUserId === currentUserId && (message.kind ?? 'text') === 'text'
+            message.id === id &&
+            message.fromUserId === currentUserId &&
+            (message.kind ?? 'text') === 'text'
               ? { ...message, text: text.trim(), editedAt: new Date().toISOString() }
               : message
           ),
         }));
+
         void saveCloud(get());
       },
 
       markChatNotificationsRead: () => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
+
         set(s => ({
           notificationReadAtByUser: {
             ...s.notificationReadAtByUser,
             [currentUserId]: new Date().toISOString(),
           },
         }));
+
         void saveCloud(get());
       },
 
-      // ── Selectors ───────────────────────────────────────────────────────────
       currentUser: () => {
         const { users, currentUserId } = get();
         return users.find(u => u.id === currentUserId) ?? null;
@@ -468,6 +527,7 @@ export const useAppStore = create<AppState>()(
 
       myInvoices: () => {
         const { invoices } = get();
+
         return invoices
           .map(normalizeInvoice)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -475,6 +535,7 @@ export const useAppStore = create<AppState>()(
 
       dashboardStats: () => {
         const invs = get().myInvoices();
+
         return {
           invoiceCount: invs.length,
           totalSalesUsd: invs.reduce((s, i) => s + i.totalUsd, 0),
