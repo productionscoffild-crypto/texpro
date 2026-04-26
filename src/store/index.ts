@@ -225,7 +225,8 @@ export const useAppStore = create<AppState>()(
         const nextUsers = uniqueUsers([...users, user]);
         saveAccessUsers(nextUsers);
         set({ users: nextUsers });
-        await saveCloud(get());
+        const saved = await saveCloud(get());
+        if (!saved.ok) return { ok: false, error: `Supabase не сохранил сотрудника: ${saved.error}` };
         return { ok: true };
       },
 
