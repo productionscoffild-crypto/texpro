@@ -96,9 +96,9 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      <div className="grid grid-flow-col auto-cols-[76vw] gap-4 overflow-x-auto pb-1 scroll-smooth sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
+      <div className="grid grid-flow-col auto-cols-[68vw] gap-2 overflow-x-auto pb-1 pr-4 scroll-smooth sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 sm:overflow-visible sm:pr-0">
         {cards.map(c => (
-          <div key={c.label} className="snap-start max-w-[270px] sm:max-w-none sm:w-auto">
+          <div key={c.label} className="snap-start max-w-[235px] sm:max-w-none sm:w-auto">
             <Card label={c.label} value={c.value} sub={c.sub}>{c.icon}</Card>
           </div>
         ))}
