@@ -58,6 +58,7 @@ const invoiceNumber = (invoices: Invoice[]): string => {
 const normalizeInvoice = (invoice: Invoice): Invoice => ({
   ...invoice,
   status: ((invoice.status as string) === 'sent' ? 'shipped' : invoice.status) as Invoice['status'],
+  updatedAt: invoice.updatedAt ?? invoice.createdAt,
   lines: invoice.lines.map(line => ({
     ...line,
     productComposition: line.productComposition ?? '',
@@ -126,14 +127,34 @@ const toCloudState = (state: AppState): CloudState => ({
   notificationReadAtByUser: state.notificationReadAtByUser,
 });
 
+const newerDate = (value?: string) => (value ? new Date(value).getTime() : 0);
+
+const mergeInvoices = (remote: Invoice[], local: Invoice[]) => {
+  const map = new Map<string, Invoice>();
+
+  [...remote, ...local].map(normalizeInvoice).forEach(invoice => {
+    const current = map.get(invoice.id);
+
+    if (!current) {
+      map.set(invoice.id, invoice);
+      return;
+    }
+
+    const currentTime = newerDate(current.updatedAt ?? current.createdAt);
+    const nextTime = newerDate(invoice.updatedAt ?? invoice.createdAt);
+
+    map.set(invoice.id, nextTime >= currentTime ? invoice : current);
+  });
+
+  return Array.from(map.values());
+};
+
 const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
   users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
   products: [...remote.products, ...local.products]
     .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
     .map(p => ({ ...p, composition: p.composition ?? '' })),
-  invoices: [...remote.invoices, ...local.invoices]
-    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
-    .map(normalizeInvoice),
+  invoices: mergeInvoices(remote.invoices, local.invoices),
   chatMessages: [...remote.chatMessages, ...local.chatMessages]
     .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
     .map(normalizeChatMessage),
@@ -397,13 +418,16 @@ export const useAppStore = create<AppState>()(
         const { invoices, currentUserId } = get();
         const id = uid();
 
-        const invoice: Invoice = {
-          id,
-          userId: currentUserId!,
-          number: invoiceNumber(invoices),
-          ...data,
-          createdAt: new Date().toISOString(),
-        };
+        const now = new Date().toISOString();
+
+const invoice: Invoice = {
+  id,
+  userId: currentUserId!,
+  number: invoiceNumber(invoices),
+  ...data,
+  createdAt: now,
+  updatedAt: now,
+};
 
         set(s => ({ invoices: [...s.invoices, invoice] }));
         void saveCloud(get());
@@ -412,12 +436,16 @@ export const useAppStore = create<AppState>()(
       },
 
       updateInvoiceStatus: (id, status) => {
-        set(s => ({
-          invoices: s.invoices.map(inv => inv.id === id ? { ...inv, status } : inv),
-        }));
+  const now = new Date().toISOString();
 
-        void saveCloud(get());
-      },
+  set(s => ({
+    invoices: s.invoices.map(inv =>
+      inv.id === id ? { ...inv, status, updatedAt: now } : inv
+    ),
+  }));
+
+  void saveCloud(get());
+},
 
       deleteInvoice: (id) => {
         set(s => ({ invoices: s.invoices.filter(inv => inv.id !== id) }));

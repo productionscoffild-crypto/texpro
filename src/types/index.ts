@@ -46,6 +46,7 @@ export interface Invoice {
   totalRub: number;
   status: 'draft' | 'processing' | 'shipped' | 'paid' | 'cancelled';
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ─── Internal chat ───────────────────────────────────────────────────────────
