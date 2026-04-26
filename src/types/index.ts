@@ -21,6 +21,7 @@ export interface Product {
   priceUsd: number;      // цена в USD
   density: number;       // плотность г/м² (характеристика)
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ─── Invoices ────────────────────────────────────────────────────────────────

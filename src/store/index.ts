@@ -67,7 +67,7 @@ const loadAccessUsers = (): User[] => {
 
 const toCloudState = (state: AppState): CloudState => ({
   users: uniqueUsers([defaultOwner(), ...state.users]),
-  products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
+  products: state.products.map(normalizeProduct),
   invoices: state.invoices.map(normalizeInvoice),
   chatMessages: state.chatMessages.map(normalizeChatMessage),
   notificationReadAtByUser: state.notificationReadAtByUser,
@@ -93,6 +93,30 @@ const mergeInvoices = (remote: Invoice[], local: Invoice[]) => {
   return Array.from(map.values());
 };
 
+const normalizeProduct = (product: Product): Product => ({
+  ...product,
+  composition: product.composition ?? '',
+  updatedAt: product.updatedAt ?? product.createdAt,
+});
+
+const mergeProducts = (remote: Product[], local: Product[]) => {
+  const map = new Map<string, Product>();
+
+  [...remote, ...local].map(normalizeProduct).forEach(product => {
+    const current = map.get(product.id);
+    if (!current) {
+      map.set(product.id, product);
+      return;
+    }
+
+    const currentTime = newerDate(current.updatedAt ?? current.createdAt);
+    const nextTime = newerDate(product.updatedAt ?? product.createdAt);
+    map.set(product.id, nextTime >= currentTime ? product : current);
+  });
+
+  return Array.from(map.values());
+};
+
 const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string }> => {
   try {
     let nextState = toCloudState(state);
@@ -111,9 +135,7 @@ const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string
 
 const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
   users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
-  products: [...remote.products, ...local.products]
-    .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
-    .map(p => ({ ...p, composition: p.composition ?? '' })),
+  products: mergeProducts(remote.products, local.products),
   invoices: mergeInvoices(remote.invoices, local.invoices),
   chatMessages: [...remote.chatMessages, ...local.chatMessages]
     .filter((item, index, array) => array.findIndex(other => other.id === item.id) === index)
@@ -131,7 +153,7 @@ const applyCloudState = (
 ) => {
   set({
     users: uniqueUsers([defaultOwner(), ...state.users]),
-    products: state.products.map(p => ({ ...p, composition: p.composition ?? '' })),
+    products: state.products.map(normalizeProduct),
     invoices: state.invoices.map(normalizeInvoice),
     chatMessages: state.chatMessages.map(normalizeChatMessage),
     notificationReadAtByUser: state.notificationReadAtByUser || {},
@@ -385,21 +407,23 @@ export const useAppStore = create<AppState>()(
           userId: get().currentUserId!,
           ...data,
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         set(s => ({ products: [...s.products, product] }));
-        void saveCloud(get());
+        void cloudApi.saveState(toCloudState(get()));
       },
 
       updateProduct: (id, data) => {
+        const now = new Date().toISOString();
         set(s => ({
-          products: s.products.map(p => (p.id === id ? { ...p, ...data } : p)),
+          products: s.products.map(p => (p.id === id ? { ...p, ...data, updatedAt: now } : p)),
         }));
-        void saveCloud(get());
+        void cloudApi.saveState(toCloudState(get()));
       },
 
       deleteProduct: (id) => {
         set(s => ({ products: s.products.filter(p => p.id !== id) }));
-        void saveCloud(get());
+        void cloudApi.saveState(toCloudState(get()));
       },
 
       // ── Invoices ────────────────────────────────────────────────────────────
