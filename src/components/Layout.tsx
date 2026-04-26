@@ -35,6 +35,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   } = useAppStore();
   const user = currentUser();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [mobileNotificationsOpen, setMobileNotificationsOpen] = useState(false);
 
   const incomingChatMessages = useMemo(() => {
     if (!user) return [];
@@ -66,11 +67,49 @@ export default function Layout({ children }: { children: ReactNode }) {
     if (nextOpen) markChatNotificationsRead();
   };
 
+  const openMobileNotifications = () => {
+    const nextOpen = !mobileNotificationsOpen;
+    setMobileNotificationsOpen(nextOpen);
+    if (nextOpen) markChatNotificationsRead();
+  };
+
   const openChatFromNotification = () => {
     markChatNotificationsRead();
     setNotificationsOpen(false);
+    setMobileNotificationsOpen(false);
     navigate('chat');
   };
+
+  const NotificationsDropdown = ({ mobile = false }: { mobile?: boolean }) => (
+    <div className={`${mobile ? 'fixed left-4 right-4 top-[62px]' : 'absolute bottom-full left-0 right-0 mb-2'} z-50 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl`}>
+      <div className="border-b border-slate-100 px-4 py-3">
+        <p className="text-[13px] font-bold text-gray-900">{t(language, 'chatNotifications')}</p>
+      </div>
+      {incomingChatMessages.length === 0 ? (
+        <div className="px-4 py-5 text-center text-[13px] text-gray-400">{t(language, 'noNotifications')}</div>
+      ) : (
+        <div className="max-h-[260px] overflow-auto">
+          {incomingChatMessages.slice(0, 6).map(message => {
+            const author = userById(message.fromUserId);
+            const preview = message.kind === 'voice'
+              ? t(language, 'voiceMessage')
+              : message.kind === 'file'
+                ? `${t(language, 'file')}: ${message.fileName || t(language, 'attachment')}`
+                : message.text;
+            return (
+              <button key={message.id} onClick={openChatFromNotification} className="w-full border-b border-slate-50 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[13px] font-semibold text-gray-900">{author?.name || 'Пользователь'}</span>
+                  <span className="shrink-0 text-[11px] text-gray-400">{new Date(message.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p className="mt-1 truncate text-[12px] text-gray-500">{preview}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
   const NavItem = ({ item }: { item: typeof NAV[0] }) => {
     const active = page === item.page || (page === 'invoice-new' && item.page === 'invoices') || (page === 'invoice-detail' && item.page === 'invoices');
@@ -136,36 +175,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </span>
           </button>
 
-          {notificationsOpen && (
-            <div className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <p className="text-[13px] font-bold text-gray-900">{t(language, 'chatNotifications')}</p>
-              </div>
-              {incomingChatMessages.length === 0 ? (
-                <div className="px-4 py-5 text-center text-[13px] text-gray-400">{t(language, 'noNotifications')}</div>
-              ) : (
-                <div className="max-h-[260px] overflow-auto">
-                  {incomingChatMessages.slice(0, 6).map(message => {
-                    const author = userById(message.fromUserId);
-                    const preview = message.kind === 'voice'
-                      ? t(language, 'voiceMessage')
-                      : message.kind === 'file'
-                        ? `${t(language, 'file')}: ${message.fileName || t(language, 'attachment')}`
-                        : message.text;
-                    return (
-                      <button key={message.id} onClick={openChatFromNotification} className="w-full border-b border-slate-50 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-[13px] font-semibold text-gray-900">{author?.name || 'Пользователь'}</span>
-                          <span className="shrink-0 text-[11px] text-gray-400">{new Date(message.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <p className="mt-1 truncate text-[12px] text-gray-500">{preview}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+          {notificationsOpen && <NotificationsDropdown />}
         </div>
         <button onClick={() => navigate('profile')} className={`w-full flex items-center gap-3 px-3 py-2 mb-2 rounded-xl text-left transition-colors ${page === 'profile' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
           <div
@@ -234,7 +244,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <IconUser size={16} />
           </button>
           <button
-            onClick={openNotifications}
+            onClick={openMobileNotifications}
             className="relative flex items-center justify-center bg-slate-100 text-slate-600 rounded-full shrink-0"
             style={{ width: 34, height: 34, minWidth: 34, minHeight: 34 }}
             aria-label="Открыть уведомления"
@@ -243,6 +253,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             {unreadCount > 0 && <span className="absolute -right-1 -top-1 h-4 min-w-4 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-4 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
         </header>
+
+        {mobileNotificationsOpen && <NotificationsDropdown mobile />}
 
         {/* Scrollable content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
