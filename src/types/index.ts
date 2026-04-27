@@ -23,6 +23,7 @@ export interface Product {
   density: number;       // плотность г/м² (характеристика)
   createdAt: string;
   updatedAt?: string;
+  deleted?: boolean;
 }
 
 // ─── Invoices ────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export interface Invoice {
   status: 'draft' | 'processing' | 'shipped' | 'paid' | 'cancelled';
   createdAt: string;
   updatedAt?: string;
+  deleted?: boolean;
 }
 
 // ─── Internal chat ───────────────────────────────────────────────────────────

@@ -99,6 +99,7 @@ const normalizeProduct = (product: Product): Product => ({
   ...product,
   composition: product.composition ?? '',
   updatedAt: product.updatedAt ?? product.createdAt,
+  deleted: product.deleted ?? false,
 });
 
 const mergeProducts = (remote: Product[], local: Product[]) => {
@@ -184,6 +185,7 @@ const normalizeInvoice = (invoice: Invoice): Invoice => ({
   ...invoice,
   status: ((invoice.status as string) === 'sent' ? 'shipped' : invoice.status) as Invoice['status'],
   updatedAt: invoice.updatedAt ?? invoice.createdAt,
+  deleted: invoice.deleted ?? false,
   lines: invoice.lines.map(line => ({
     ...line,
     productComposition: line.productComposition ?? '',
@@ -431,9 +433,18 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteProduct: (id) => {
-        set(s => ({ products: s.products.filter(p => p.id !== id) }));
-        void cloudApi.saveState(toCloudState(get()));
-      },
+  const now = new Date().toISOString();
+
+  set(s => ({
+    products: s.products.map(product =>
+      product.id === id
+        ? { ...product, deleted: true, updatedAt: now }
+        : product
+    ),
+  }));
+
+  void cloudApi.saveState(toCloudState(get()));
+},
 
       // ── Invoices ────────────────────────────────────────────────────────────
       createInvoice: (data) => {
@@ -460,9 +471,18 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteInvoice: (id) => {
-        set(s => ({ invoices: s.invoices.filter(inv => inv.id !== id) }));
-        void saveCloud(get());
-      },
+  const now = new Date().toISOString();
+
+  set(s => ({
+    invoices: s.invoices.map(invoice =>
+      invoice.id === id
+        ? { ...invoice, deleted: true, updatedAt: now }
+        : invoice
+    ),
+  }));
+
+  void cloudApi.saveState(toCloudState(get()));
+},
 
       sendChatMessage: ({ scope, text, toUserId }) => {
         const currentUserId = get().currentUserId;
@@ -550,16 +570,18 @@ export const useAppStore = create<AppState>()(
       },
 
       myProducts: () => {
-        const { products } = get();
-        return products.map(p => ({ ...p, composition: p.composition ?? '' }));
-      },
+  const { products } = get();
+  return products.map(normalizeProduct).filter(product => !product.deleted);
+},
 
       myInvoices: () => {
-        const { invoices } = get();
-        return invoices
-          .map(normalizeInvoice)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      },
+  const { invoices } = get();
+
+  return invoices
+    .map(normalizeInvoice)
+    .filter(invoice => !invoice.deleted)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+},
 
       dashboardStats: () => {
         const invs = get().myInvoices();
