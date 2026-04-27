@@ -23,7 +23,9 @@ const defaultState = (): CloudState => ({
       passwordHash: 'owner12345',
       role: 'owner',
       active: true,
+      deleted: false,
       createdAt: new Date().toISOString(),
+      updatedAt: '2024-01-01T00:00:00.000Z',
     },
   ],
   products: [],
@@ -33,7 +35,9 @@ const defaultState = (): CloudState => ({
 });
 
 const normalizeCloudState = (state: Partial<CloudState> | null | undefined): CloudState => ({
-  users: state?.users?.length ? state.users : defaultState().users,
+  users: state?.users?.length
+    ? state.users.map(user => ({ ...user, deleted: user.deleted ?? false, updatedAt: user.updatedAt ?? user.createdAt }))
+    : defaultState().users,
   products: state?.products || [],
   invoices: state?.invoices || [],
   chatMessages: state?.chatMessages || [],
@@ -89,6 +93,7 @@ async function loginSupabase(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();
   const user = state.users.find(item => item.email.trim().toLowerCase() === normalizedEmail);
   if (!user) throw new Error('Пользователь не найден');
+  if (user.deleted) throw new Error('Пользователь удалён');
   if (!user.active) throw new Error('Доступ сотрудника отключён');
   if (user.passwordHash !== password) throw new Error('Неверный пароль');
   return { user, state };

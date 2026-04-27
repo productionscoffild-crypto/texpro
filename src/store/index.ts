@@ -68,7 +68,7 @@ const loadAccessUsers = (): User[] => {
 };
 
 const toCloudState = (state: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...state.users]).filter(user => !user.deleted),
+  users: uniqueUsers([defaultOwner(), ...state.users]),
   products: state.products.map(normalizeProduct),
   invoices: state.invoices.map(normalizeInvoice),
   chatMessages: state.chatMessages.map(normalizeChatMessage),
@@ -136,7 +136,7 @@ const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string
 };
 
 const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]).filter(user => !user.deleted),
+  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
   products: mergeProducts(remote.products, local.products),
   invoices: mergeInvoices(remote.invoices, local.invoices),
   chatMessages: [...remote.chatMessages, ...local.chatMessages]
@@ -154,7 +154,7 @@ const applyCloudState = (
   currentUserId: string | null = null
 ) => {
   set({
-    users: uniqueUsers([defaultOwner(), ...state.users]).filter(user => !user.deleted),
+    users: uniqueUsers([defaultOwner(), ...state.users]),
     products: state.products.map(normalizeProduct),
     invoices: state.invoices.map(normalizeInvoice),
     chatMessages: state.chatMessages.map(normalizeChatMessage),
