@@ -251,4 +251,15 @@
 /* ── Misc ───────────────────────────────────────────────────────────────── */
 .divider { height: 1px; background: #f1f5f9; margin: 0; }
 .text-money { font-variant-numeric: tabular-nums; }
+.content-main > .anim-fade-up {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+@media (min-width: 1024px) {
+  .content-main > .anim-fade-up {
+    margin-left: clamp(56px, 8vw, 160px) !important;
+    margin-right: auto !important;
+  }
+}
 .truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
