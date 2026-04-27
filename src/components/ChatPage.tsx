@@ -16,7 +16,7 @@ export default function ChatPage() {
   const { toast } = useToast();
   const me = currentUser();
   const owner = users.find(u => u.role === 'owner');
-  const employees = users.filter(u => u.role === 'employee' && u.active);
+  const employees = users.filter(u => u.role === 'employee' && u.active && !u.deleted);
   const [activeChannelId, setActiveChannelId] = useState('general');
   const [text, setText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -209,7 +209,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto anim-fade-up">
+    <div className="space-y-5 w-full max-w-7xl anim-fade-up">
       <div>
         <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'chat')}</h1>
         <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'chatSubtitle')}</p>

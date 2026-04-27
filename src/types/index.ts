@@ -8,6 +8,7 @@ export interface User {
   passwordHash: string; // stored as plain text in localStorage demo
   role: 'owner' | 'employee';
   active: boolean;
+  deleted?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

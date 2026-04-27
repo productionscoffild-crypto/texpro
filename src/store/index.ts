@@ -22,6 +22,7 @@ const defaultOwner = (): User => {
     passwordHash: OWNER_PASSWORD,
     role: 'owner',
     active: true,
+  deleted: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -32,6 +33,7 @@ const normalizeUser = (user: User): User => ({
   email: user.email.trim().toLowerCase(),
   role: user.role ?? 'employee',
   active: user.active ?? true,
+  deleted: user.deleted ?? false,
   phone: user.phone ?? '',
   position: user.position ?? (user.role === 'owner' ? 'Руководитель' : 'Менеджер'),
   updatedAt: user.updatedAt ?? user.createdAt,
@@ -66,7 +68,7 @@ const loadAccessUsers = (): User[] => {
 };
 
 const toCloudState = (state: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...state.users]),
+  users: uniqueUsers([defaultOwner(), ...state.users]).filter(user => !user.deleted),
   products: state.products.map(normalizeProduct),
   invoices: state.invoices.map(normalizeInvoice),
   chatMessages: state.chatMessages.map(normalizeChatMessage),
@@ -134,7 +136,7 @@ const saveCloud = async (state: AppState): Promise<{ ok: boolean; error?: string
 };
 
 const mergeCloudState = (remote: CloudState, local: AppState): CloudState => ({
-  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]),
+  users: uniqueUsers([defaultOwner(), ...remote.users, ...local.users]).filter(user => !user.deleted),
   products: mergeProducts(remote.products, local.products),
   invoices: mergeInvoices(remote.invoices, local.invoices),
   chatMessages: [...remote.chatMessages, ...local.chatMessages]
@@ -152,7 +154,7 @@ const applyCloudState = (
   currentUserId: string | null = null
 ) => {
   set({
-    users: uniqueUsers([defaultOwner(), ...state.users]),
+    users: uniqueUsers([defaultOwner(), ...state.users]).filter(user => !user.deleted),
     products: state.products.map(normalizeProduct),
     invoices: state.invoices.map(normalizeInvoice),
     chatMessages: state.chatMessages.map(normalizeChatMessage),
@@ -286,6 +288,7 @@ export const useAppStore = create<AppState>()(
           passwordHash: password,
           role: 'employee',
           active: true,
+          deleted: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -311,12 +314,18 @@ export const useAppStore = create<AppState>()(
       deleteEmployee: (id) => {
         const current = get().currentUser();
         if (current?.role !== 'owner') return;
+        const now = new Date().toISOString();
+
         set(s => {
-          const users = uniqueUsers(s.users.filter(u => !(u.id === id && u.role === 'employee')));
+          const users = uniqueUsers(s.users.map(u =>
+            u.id === id && u.role === 'employee'
+              ? { ...u, active: false, deleted: true, updatedAt: now }
+              : u
+          ));
           saveAccessUsers(users);
           return { users };
         });
-        void saveCloud(get());
+        void cloudApi.saveState(toCloudState(get()));
       },
 
       updateProfile: (data) => {

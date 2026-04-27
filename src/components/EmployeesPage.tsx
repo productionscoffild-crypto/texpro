@@ -8,7 +8,7 @@ export default function EmployeesPage() {
   const { users, currentUser, createEmployee, toggleEmployee, deleteEmployee, language } = useAppStore();
   const { toast } = useToast();
   const me = currentUser();
-  const employees = users.filter(u => u.role === 'employee');
+  const employees = users.filter(u => u.role === 'employee' && !u.deleted);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,14 +40,14 @@ export default function EmployeesPage() {
 
   if (me?.role !== 'owner') {
     return (
-      <div className="max-w-3xl mx-auto card p-8 text-center anim-fade-up">
+      <div className="max-w-3xl card p-8 text-center anim-fade-up">
         <p className="text-gray-500">{t(language, 'accessDeniedOwner')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto anim-fade-up">
+    <div className="space-y-5 w-full max-w-6xl anim-fade-up">
       <div>
         <h1 className="text-[22px] font-bold text-gray-900">{t(language, 'employees')}</h1>
         <p className="text-[14px] text-gray-500 mt-0.5">{t(language, 'employeesSubtitle')}</p>
