@@ -257,10 +257,11 @@ export default function Layout({ children }: { children: ReactNode }) {
         {mobileNotificationsOpen && <NotificationsDropdown mobile />}
 
         {/* Scrollable content */}
-        <main className="content-main flex-1 overflow-y-auto p-4 md:p-6 lg:pl-10 xl:pl-12">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
     </div>
   );
 }
+
