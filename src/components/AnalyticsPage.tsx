@@ -97,12 +97,12 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 pr-4 scroll-smooth sm:grid sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 sm:overflow-visible sm:pr-0">
-  {cards.map(c => (
-    <div key={c.label} className="w-[220px] shrink-0 snap-start sm:w-auto sm:shrink">
-      <Card label={c.label} value={c.value} sub={c.sub}>{c.icon}</Card>
-    </div>
-  ))}
-</div>
+        {cards.map(c => (
+          <div key={c.label} className="w-[220px] shrink-0 snap-start sm:w-auto sm:shrink">
+            <Card label={c.label} value={c.value} sub={c.sub}>{c.icon}</Card>
+          </div>
+        ))}
+      </div>
 
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
